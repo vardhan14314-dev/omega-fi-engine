@@ -1,11 +1,22 @@
 name: OMEGA FI ENGINE
 
 on:
-  # Run automatically every 15 minutes Mon–Fri
+  # 🔁 Scheduled run – NEXT_DAY scan after market close (Mon–Fri)
+  # Time is in UTC. 11:30 UTC ≈ 17:00 IST (5:00 PM IST)
   schedule:
-    - cron: "*/15 3-10 * * 1-5"
-  # Allow manual trigger from Actions tab
+    - cron: "30 11 * * 1-5"
+
+  # ▶ Manual trigger from the Actions tab
   workflow_dispatch:
+    inputs:
+      scan_mode:
+        description: "Mode: NEXT_DAY (default) or LIVE"
+        required: false
+        default: "NEXT_DAY"
+      symbols:
+        description: "Comma-separated FYERS symbols (used in LIVE mode)"
+        required: false
+        default: ""
 
 jobs:
   run-engine:
@@ -18,12 +29,25 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: "3.11"
 
       - name: Install dependencies
         run: pip install -r requirements.txt
 
       - name: Run OMEGA-FI engine
         env:
+          # 🔑 API keys / secrets
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          FYERS_CLIENT_ID: ${{ secrets.FYERS_CLIENT_ID }}
+          FYERS_SECRET_KEY: ${{ secrets.FYERS_SECRET_KEY }}
+          FYERS_REDIRECT_URI: ${{ secrets.FYERS_REDIRECT_URI }}
+          FYERS_ACCESS_TOKEN: ${{ secrets.FYERS_ACCESS_TOKEN }}
+
+          # 🎛 Mode + symbol controls for app.py
+          # From manual trigger (workflow_dispatch); empty when schedule runs
+          SCAN_MODE: ${{ github.event.inputs.scan_mode }}
+          SYMBOLS: ${{ github.event.inputs.symbols }}
+
+          # Default next-day universe (used by build_next_day_payload in app.py)
+          NEXT_DAY_SYMBOLS: "NSE:HDFCBANK-EQ,NSE:RELIANCE-EQ,NSE:TCS-EQ,NSE:SBIN-EQ,NSE:ICICIBANK-EQ"
         run: python app.py
