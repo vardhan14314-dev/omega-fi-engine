@@ -1,3 +1,6 @@
-requests
-python-dotenv
 openai
+fyers-apiv3
+requests
+pytz
+python-dotenv
+
